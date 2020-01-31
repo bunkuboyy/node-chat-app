@@ -6,6 +6,7 @@ const http = require('http');
 const publicPath = path.join(__dirname,'../public');
 const port = process.env.PORT || 3000;
 var app = express();
+var {messageGenerator} = require('./utils/message.js');
 
 app.use(express.static(publicPath));
 
@@ -15,30 +16,18 @@ var io = socketIO(server);
 io.on('connection',(socket) =>{
   console.log('new user connected');
 
-  socket.emit('newMessage',{
-    from : 'Admin',
-    text : 'Welcome to the chat box',
-    createdAt : new Date().getTime()
-  });
+  socket.emit('newMessage',messageGenerator('Admin','Hello bunkuboy'));
 
-  socket.broadcast.emit('newMessage',{
-    from : 'Admin',
-    text : 'new User joined',
-    createdAt : new Date().getTime()
-  })
+  socket.broadcast.emit('newMessage',messageGenerator('Admin','New user joined'));
 
-socket.on('createMessage',(message) =>{
+socket.on('createMessage',(message,callback) =>{
   console.log(message);
-  // io.emit('newMessage',{
-  //   from : message.from,
-  //   text : message.text,
-  //   createdAt : new Date().getTime()
-  //})
-  socket.broadcast.emit('newMessage',{
-    from : message.from,
-    text : message.text,
-    createdAt : new Date().getTime()
-  })
+  io.emit('newMessage',messageGenerator(message.from,message.text));
+  callback('This if from bunku');
+})
+
+socket.on('createLocationMessage',(coords) =>{
+  io.emit('newMessage',generateMessage('Admin',`${coords.latitude},${coords.longitude}`));
 })
 
 socket.on('disconnect',() =>{
